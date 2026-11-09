@@ -1,0 +1,71 @@
+# =============================================================================
+#  R E P S   ·   access-gate
+# =============================================================================
+[package]
+name    = "access-gate"
+version = "0.1.0"
+
+# Minimum Supported Rust Version (MSRV)
+rust-version = "1.85"
+edition = "2024"
+
+# License
+license = "Apache-2.0 OR MIT"
+
+# Readme
+readme = "README.md"
+
+# Description
+description = "Authorization for Rust services: roles compiled to permission bit sets at boot, rules with ownership, tenancy, attribute and step-up conditions, deny by default. Storage-free, no dependencies, no_std."
+
+# Keywords (5 max)
+keywords = ["authorization", "rbac", "abac", "permissions", "security"]
+
+# Categories
+categories = ["authentication", "web-programming", "no-std"]
+
+# Links
+homepage      = "https://github.com/jamesgober/access-gate"
+repository    = "https://github.com/jamesgober/access-gate"
+documentation = "https://docs.rs/access-gate"
+
+# Authors
+authors = ["James Gober <me@jamesgober.com>"]
+
+# Development-only packages and tool configuration are never published.
+exclude = ["/fuzz", "/.cargo"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lib]
+name = "access_gate"
+path = "src/lib.rs"
+
+
+# FEATURE FLAGS
+# #################################
+[features]
+default = []
+
+
+# DEPENDENCIES
+# #################################
+[dependencies]
+
+
+# DEV DEPENDENCIES
+# #################################
+[dev-dependencies]
+# Benchmarks only; never linked into the library.
+criterion = { version = "0.7", default-features = false, features = ["cargo_bench_support"] }
+# Property tests only; never linked into the library.
+proptest = { version = "1.6", default-features = false, features = ["std"] }
+
+
+# BENCHMARKS
+# #################################
+[[bench]]
+name = "decide"
+harness = false
