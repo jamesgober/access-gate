@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 7f24b2df43d09d5a241134b3ca71bdb65f5aac6824944c6a5dbc5a5e3180b4eb # shrinks to r = Rule { audience: GuestsOnly, need: {0}, allow_pending: false, allow_suspended: false, conditions: [None, None, None, None, None, None, None, None] }, res = None, now = 0

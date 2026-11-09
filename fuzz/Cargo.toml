@@ -1,0 +1,24 @@
+# Fuzz targets (cargo-fuzz, nightly). Development only: not part of the
+# published crate.
+[package]
+name = "access-gate-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+access-gate = { path = ".." }
+
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "decide"
+path = "fuzz_targets/decide.rs"
+test = false
+doc = false
+bench = false
