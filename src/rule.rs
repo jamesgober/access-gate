@@ -129,8 +129,14 @@ impl Rule {
     ///
     /// # Errors
     ///
-    /// [`SchemaError::TooManyConditions`] past eight.
+    /// [`SchemaError::TooManyConditions`] past eight;
+    /// [`SchemaError::EmptyOverride`] for an `OwnerOr` with no permissions.
     pub fn when(mut self, condition: Condition) -> Result<Self, SchemaError> {
+        if let Condition::OwnerOr(perms) = condition {
+            if perms.is_empty() {
+                return Err(SchemaError::EmptyOverride);
+            }
+        }
         let slot = self
             .conditions
             .iter_mut()

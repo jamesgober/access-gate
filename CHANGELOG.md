@@ -13,6 +13,29 @@
 
 ---
 
+## [0.4.0] - 2026-11-11
+
+Hardening fixes.
+
+### Changed
+
+- `AttrId::from_index` returns `Option<AttrId>`: an index past 15 no longer
+  wraps onto another attribute (breaking).
+- `owner_or` with no permissions, or `Condition::OwnerOr` with an empty set,
+  refuses with `SchemaError::EmptyOverride` instead of admitting every
+  signed-in subject.
+- A pending or suspended subject passes an open rule that the guest grants
+  cover: what a guest may read, a member of any standing may read.
+
+### Added
+
+- `Schema::fingerprint`: a 64-bit version of the permission and attribute
+  positions, for checking a permission set stored outside the process.
+
+See [`docs/release/v0.4.0.md`](./docs/release/v0.4.0.md).
+
+---
+
 ## [0.3.0] - 2026-11-08
 
 Hardening: property tests for every invariant, fuzz targets for every parser, and benchmarks with measured numbers.

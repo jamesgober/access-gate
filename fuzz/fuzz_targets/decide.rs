@@ -54,9 +54,9 @@ fuzz_target!(|data: &[u8]| {
     for _ in 0..(b.u8() % 4) {
         let c = match b.u8() % 5 {
             0 => Condition::Owner,
-            1 => Condition::OwnerOr(b.perms()),
+            1 => Condition::OwnerOr(b.perms().with(Perm::from_index(0))),
             2 => Condition::SameTenant,
-            3 => Condition::AttrMatch(AttrId::from_index(b.u8())),
+            3 => Condition::AttrMatch(AttrId::from_index(b.u8() % 16).unwrap()),
             _ => Condition::FreshFactor(b.u64()),
         };
         rule = rule.when(c).unwrap_or(rule);
@@ -72,12 +72,12 @@ fuzz_target!(|data: &[u8]| {
         .with_perms(b.perms())
         .with_tenant(b.u64() % 3)
         .with_status(status)
-        .with_attrs(Attrs::new().with(AttrId::from_index(b.u8()), b.u64() % 3))
+        .with_attrs(Attrs::new().with(AttrId::from_index(b.u8() % 16).unwrap(), b.u64() % 3))
         .with_factor_at(b.u64());
     let resource = Resource::new()
         .owner(u128::from(b.u64() % 3))
         .tenant(b.u64() % 3)
-        .attr(AttrId::from_index(b.u8()), b.u64() % 3);
+        .attr(AttrId::from_index(b.u8() % 16).unwrap(), b.u64() % 3);
     let now = b.u64();
     for (s, r) in [
         (Some(&subject), Some(&resource)),

@@ -12,6 +12,7 @@ Everything is re-exported at the crate root.
 | `SchemaBuilder::attribute(name)` | attributes rules may compare (at most 16) |
 | `SchemaBuilder::guest_grants(&[..])` | permissions every visitor holds; read back with `Schema::guests` |
 | `SchemaBuilder::build() -> Result<Schema, SchemaError>` | compile; inheritance resolved, cycles refused |
+| `Schema::fingerprint` | a version of the bit positions, to check stored permission sets against |
 | `Schema::perm`, `perms`, `perm_name`, `role`, `role_perms`, `grants`, `attribute`, `attribute_name`, `attributes`, `permission_count`, `role_count`, `service` | lookups |
 
 Names: 1 to 64 bytes of `a-z 0-9 . _ - :`.

@@ -322,6 +322,45 @@ impl Schema {
         &self.service
     }
 
+    /// A 64-bit fingerprint of everything a stored permission set or
+    /// attribute set depends on: the service name and the permission and
+    /// attribute names in declaration order. Store it next to a
+    /// [`PermSet`] kept outside the process (a session record), and refuse
+    /// the set when the fingerprint differs: a reordered or inserted
+    /// permission changes every bit after it.
+    ///
+    /// ```
+    /// use access_gate::Schema;
+    ///
+    /// let a = Schema::builder("web").permissions(&["post.read", "admin.delete"]).build()?;
+    /// let b = Schema::builder("web").permissions(&["admin.delete", "post.read"]).build()?;
+    /// assert_ne!(a.fingerprint(), b.fingerprint());
+    /// # Ok::<(), access_gate::SchemaError>(())
+    /// ```
+    #[must_use]
+    pub fn fingerprint(&self) -> u64 {
+        // FNV-1a over length-prefixed names: stable across builds and
+        // platforms, no dependency. Not a security boundary by itself (the
+        // schema is the service's own code), only a version check.
+        let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+        let mut eat = |bytes: &[u8]| {
+            for b in (bytes.len() as u32).to_le_bytes().iter().chain(bytes) {
+                h ^= u64::from(*b);
+                h = h.wrapping_mul(0x0100_0000_01b3);
+            }
+        };
+        eat(self.service.as_bytes());
+        eat(b"perms");
+        for p in &self.perms {
+            eat(p.as_bytes());
+        }
+        eat(b"attrs");
+        for a in &self.attrs {
+            eat(a.as_bytes());
+        }
+        h
+    }
+
     /// The permission called `name`.
     #[must_use]
     pub fn perm(&self, name: &str) -> Option<Perm> {
@@ -401,7 +440,7 @@ impl Schema {
         self.attrs
             .iter()
             .position(|a| &**a == name)
-            .map(|i| AttrId::from_index(i as u8))
+            .map(|i| AttrId::new_bounded(i as u8))
     }
 
     /// The name of `attr`.
@@ -415,7 +454,7 @@ impl Schema {
         self.attrs
             .iter()
             .enumerate()
-            .map(|(i, a)| (AttrId::from_index(i as u8), &**a))
+            .map(|(i, a)| (AttrId::new_bounded(i as u8), &**a))
     }
 
     /// How many permissions the schema declares.

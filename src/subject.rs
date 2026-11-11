@@ -12,9 +12,19 @@ pub const MAX_ATTRIBUTES: usize = 16;
 pub struct AttrId(u8);
 
 impl AttrId {
-    /// The attribute at `index` (0 to 15). Indexes above 15 wrap into range.
+    /// The attribute at `index`, or `None` past 15. An index out of range
+    /// never aliases another attribute.
     #[must_use]
-    pub const fn from_index(index: u8) -> Self {
+    pub const fn from_index(index: u8) -> Option<Self> {
+        if index < MAX_ATTRIBUTES as u8 {
+            Some(Self(index))
+        } else {
+            None
+        }
+    }
+
+    /// For indexes the crate has already bounded (0 to 15).
+    pub(crate) const fn new_bounded(index: u8) -> Self {
         Self(index & 15)
     }
 
@@ -80,7 +90,7 @@ impl Attrs {
     /// The set attributes, lowest id first.
     pub fn iter(&self) -> impl Iterator<Item = (AttrId, u64)> + '_ {
         (0..16u8)
-            .map(AttrId::from_index)
+            .map(AttrId::new_bounded)
             .filter_map(move |id| self.get(id).map(|v| (id, v)))
     }
 }

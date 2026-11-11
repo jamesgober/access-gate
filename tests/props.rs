@@ -38,7 +38,7 @@ fn subject() -> impl Strategy<Value = Subject> {
             }
             let mut a = Attrs::new();
             for (k, v) in attrs {
-                a.set(AttrId::from_index(k), v);
+                a.set(AttrId::from_index(k).unwrap(), v);
             }
             s.with_attrs(a)
         })
@@ -49,7 +49,7 @@ fn condition() -> impl Strategy<Value = Condition> {
         Just(Condition::Owner),
         permset().prop_map(Condition::OwnerOr),
         Just(Condition::SameTenant),
-        (0u8..16).prop_map(|i| Condition::AttrMatch(AttrId::from_index(i))),
+        (0u8..16).prop_map(|i| Condition::AttrMatch(AttrId::from_index(i).unwrap())),
         any::<u64>().prop_map(Condition::FreshFactor),
     ]
 }

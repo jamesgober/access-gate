@@ -51,6 +51,8 @@ pub enum SchemaError {
     InheritsWithoutRole,
     /// A rule holds more conditions than it can (8).
     TooManyConditions,
+    /// `owner_or` with no permissions, which would admit every subject.
+    EmptyOverride,
 }
 
 impl fmt::Display for SchemaError {
@@ -73,6 +75,9 @@ impl fmt::Display for SchemaError {
             Self::RoleCycle { role } => write!(f, "role {role:?} inherits from itself"),
             Self::InheritsWithoutRole => f.write_str("`inherits` called before any `role`"),
             Self::TooManyConditions => f.write_str("a rule holds at most 8 conditions"),
+            Self::EmptyOverride => {
+                f.write_str("`owner_or` needs at least one permission (none would admit everyone)")
+            }
         }
     }
 }

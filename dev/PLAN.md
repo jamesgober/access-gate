@@ -19,3 +19,5 @@ access-gate is authorization: deny-by-default permission sets compiled from role
 | D-007 | 2026-11-08 | An unknown role name at sign-in grants nothing | a role removed from the schema but still stored fails closed |
 | D-008 | 2026-11-08 | Rules are `Copy` with at most 8 inline conditions | no allocation or pointer chase per decision |
 | D-009 | 2026-11-08 | Guest grants: a schema names permissions every visitor holds (`guest_grants`); `authorize_with` applies them to guests and members | public pages that still name a permission; a guest is not a signed-in subject |
+| D-010 | 2026-11-11 | `Schema::fingerprint` (FNV-1a over the service and the ordered permission and attribute names) | a stored permission set is positional; a consumer must refuse one written under another schema (hardening) |
+| D-011 | 2026-11-11 | `AttrId::from_index` returns `Option`; `owner_or` with no permissions refuses the boot; guest-covered open rules pass every standing | hardening |

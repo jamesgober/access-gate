@@ -109,6 +109,14 @@ pub fn authorize_with(
     if rule.audience() == Audience::GuestsOnly {
         return Err(Denial::new(DenialKind::GuestOnly));
     }
+    // What a guest may do, any signed-in subject may do, whatever its
+    // standing: the status check guards only what membership adds.
+    if rule.audience() == Audience::Anyone
+        && rule.conditions().next().is_none()
+        && guests.covers(rule.need())
+    {
+        return Ok(());
+    }
     match subject.status() {
         Status::Active => {}
         Status::PendingVerification => {
