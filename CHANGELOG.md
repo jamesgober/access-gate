@@ -32,6 +32,17 @@ Hardening fixes.
 - `Schema::fingerprint`: a 64-bit version of the permission and attribute
   positions, for checking a permission set stored outside the process.
 
+### Migrating from 0.3
+
+- `AttrId::from_index(i)` returns `Option<AttrId>`: write
+  `AttrId::from_index(i).ok_or(..)?`, or get ids from
+  `Schema::attribute(name)`, which never needs an index.
+- An `owner_or` rule built from an empty list now refuses the boot
+  (`SchemaError::EmptyOverride`): give it the override permissions, or use
+  `owner()`.
+- If you store a `PermSet` outside the process, store
+  `Schema::fingerprint()` next to it and refuse the set when it differs.
+
 See [`docs/release/v0.4.0.md`](./docs/release/v0.4.0.md).
 
 ---
