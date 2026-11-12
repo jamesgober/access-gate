@@ -70,14 +70,11 @@ fn test_fingerprint_tracks_bit_positions() {
         base().build().unwrap().fingerprint(),
         "stable"
     );
-    assert_eq!(
+    let with_role = base().role("member", &["post.read"]).build().unwrap();
+    assert_ne!(
         a.fingerprint(),
-        base()
-            .role("member", &["post.read"])
-            .build()
-            .unwrap()
-            .fingerprint(),
-        "roles do not move bits"
+        with_role.fingerprint(),
+        "roles are part of it"
     );
     let reordered = Schema::builder("web")
         .permissions(&["admin.delete", "post.read"])
@@ -92,4 +89,62 @@ fn test_fingerprint_tracks_bit_positions() {
     for other in [reordered, inserted, attr, service] {
         assert_ne!(a.fingerprint(), other.build().unwrap().fingerprint());
     }
+}
+
+/// A permission or attribute named like a section cannot shift the
+/// sections: these two schemas once gave the same fingerprint.
+#[test]
+fn test_fingerprint_section_names_do_not_collide() {
+    let a = Schema::builder("web")
+        .permissions(&["post.read", "attrs", "org"])
+        .attribute("tenant")
+        .build()
+        .unwrap();
+    let b = Schema::builder("web")
+        .permissions(&["post.read"])
+        .attribute("org")
+        .attribute("attrs")
+        .attribute("tenant")
+        .build()
+        .unwrap();
+    assert_ne!(a.fingerprint(), b.fingerprint());
+}
+
+/// A role that loses a permission changes the fingerprint, so sessions
+/// that carry the old grant end.
+#[test]
+fn test_fingerprint_changes_when_a_role_loses_a_grant() {
+    let before = Schema::builder("web")
+        .permissions(&["post.read", "admin.delete"])
+        .role("member", &["post.read", "admin.delete"])
+        .build()
+        .unwrap();
+    let after = Schema::builder("web")
+        .permissions(&["post.read", "admin.delete"])
+        .role("member", &["post.read"])
+        .build()
+        .unwrap();
+    assert_ne!(before.fingerprint(), after.fingerprint());
+    // An inherited grant counts too.
+    let inherit = |grant: &[&str]| {
+        Schema::builder("web")
+            .permissions(&["a", "b"])
+            .role("base", grant)
+            .role("child", &[])
+            .inherits("base")
+            .build()
+            .unwrap()
+            .fingerprint()
+    };
+    assert_ne!(inherit(&["a", "b"]), inherit(&["a"]));
+    // Guest grants too.
+    let guests = |grant: &[&str]| {
+        Schema::builder("web")
+            .permissions(&["a"])
+            .guest_grants(grant)
+            .build()
+            .unwrap()
+            .fingerprint()
+    };
+    assert_ne!(guests(&["a"]), guests(&[]));
 }

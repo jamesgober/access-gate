@@ -14,6 +14,37 @@ pub const MAX_ROLES: usize = 1024;
 /// The longest name a permission, role, or attribute can have, in bytes.
 pub const MAX_NAME_LEN: usize = 64;
 
+/// FNV-1a, 64-bit.
+struct Fnv(u64);
+
+impl Fnv {
+    const fn new() -> Self {
+        Self(0xcbf2_9ce4_8422_2325)
+    }
+
+    fn bytes(&mut self, bytes: &[u8]) {
+        for b in bytes {
+            self.0 ^= u64::from(*b);
+            self.0 = self.0.wrapping_mul(0x0100_0000_01b3);
+        }
+    }
+
+    fn name(&mut self, name: &str) {
+        self.bytes(&(name.len() as u32).to_le_bytes());
+        self.bytes(name.as_bytes());
+    }
+
+    fn section(&mut self, id: u8, count: usize) {
+        self.bytes(&u32::MAX.to_le_bytes());
+        self.bytes(&[id]);
+        self.bytes(&(count as u32).to_le_bytes());
+    }
+
+    const fn finish(&self) -> u64 {
+        self.0
+    }
+}
+
 /// A role, by its position in the compiled [`Schema`].
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct RoleId(u16);
@@ -323,11 +354,13 @@ impl Schema {
     }
 
     /// A 64-bit fingerprint of everything a stored permission set or
-    /// attribute set depends on: the service name and the permission and
-    /// attribute names in declaration order. Store it next to a
+    /// attribute set depends on: the service name, the permission and
+    /// attribute names in declaration order, what each role grants (with
+    /// inheritance resolved), and the guest grants. Store it next to a
     /// [`PermSet`] kept outside the process (a session record), and refuse
     /// the set when the fingerprint differs: a reordered or inserted
-    /// permission changes every bit after it.
+    /// permission changes every bit after it, and a role that lost a
+    /// permission must not keep it in old sessions.
     ///
     /// ```
     /// use access_gate::Schema;
@@ -339,26 +372,31 @@ impl Schema {
     /// ```
     #[must_use]
     pub fn fingerprint(&self) -> u64 {
-        // FNV-1a over length-prefixed names: stable across builds and
-        // platforms, no dependency. Not a security boundary by itself (the
-        // schema is the service's own code), only a version check.
-        let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-        let mut eat = |bytes: &[u8]| {
-            for b in (bytes.len() as u32).to_le_bytes().iter().chain(bytes) {
-                h ^= u64::from(*b);
-                h = h.wrapping_mul(0x0100_0000_01b3);
-            }
-        };
-        eat(self.service.as_bytes());
-        eat(b"perms");
+        // FNV-1a: stable across builds and platforms, no dependency. Not a
+        // security boundary by itself (the schema is the service's own
+        // code), only a version check. A name goes in as its length then
+        // its bytes; a section opens with a length no name can have
+        // (u32::MAX), its id, and its item count, so no name can imitate a
+        // section boundary.
+        let mut f = Fnv::new();
+        f.section(0, 1);
+        f.name(&self.service);
+        f.section(1, self.perms.len());
         for p in &self.perms {
-            eat(p.as_bytes());
+            f.name(p);
         }
-        eat(b"attrs");
+        f.section(2, self.attrs.len());
         for a in &self.attrs {
-            eat(a.as_bytes());
+            f.name(a);
         }
-        h
+        f.section(3, self.roles.len());
+        for (name, set) in &self.roles {
+            f.name(name);
+            f.bytes(&set.to_bytes());
+        }
+        f.section(4, 1);
+        f.bytes(&self.guests.to_bytes());
+        f.finish()
     }
 
     /// The permission called `name`.
